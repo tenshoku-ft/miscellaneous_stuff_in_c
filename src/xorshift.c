@@ -9,7 +9,7 @@ struct random_xorshift128_st{
 	uint32_t w;
 };
 
-void random_xorshift128_init(random_xorshift128_t**pself,uint32_t x,uint32_t y,uint32_t z,uint32_t w){
+void random_xorshift128_new(random_xorshift128_t**pself,uint32_t x,uint32_t y,uint32_t z,uint32_t w){
 	*pself=malloc(sizeof(**pself));
 	if(!*pself){
 		return;
