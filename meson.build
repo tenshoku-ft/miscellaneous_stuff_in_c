@@ -27,10 +27,23 @@ pkgconfig.generate(
 	libgmocoin,
 )
 
-example_gmocoin=executable(
+example_gmocoin_status=executable(
 	'gmocoin_status',
 	[
 		'examples/gmocoin_status.c',
+	],
+	include_directories: [
+		'include',
+	],
+	link_with: [
+		libgmocoin,
+	],
+)
+
+example_gmocoin_trades=executable(
+	'gmocoin_trades',
+	[
+		'examples/gmocoin_trades.c',
 	],
 	include_directories: [
 		'include',

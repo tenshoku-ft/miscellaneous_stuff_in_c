@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <curl/curl.h>
 #include <cjson/cJSON.h>
+#include <stdio.h>
 
 #define GMOCOIN_URL_MAX_LENGTH 1024
 #define GMOCOIN_ENDPOINT_PUBLIC "https://api.coin.z.com/public"
@@ -81,23 +82,27 @@ int gmocoin_status(gmocoin_t*self,gmocoin_status_t*status){
 	int res;
 	res=gmocoin_request_public(self,"GET","/v1/status",NULL,0,&response_body,&response_body_size);
 	if(res){
+		if(response_body){
+			free(response_body);
+		}
 		return !0;
 	}
 	cJSON*json=cJSON_ParseWithLength((const char*)response_body,response_body_size);
 	free(response_body);
-	cJSON*json_data;
-	cJSON*json_data_status;
-	if((!json)||(!cJSON_IsObject(json))){
-		if(json){
-			cJSON_free(json);
-		}
+	if(!json){
 		return !0;
 	}
+	if(!cJSON_IsObject(json)){
+		cJSON_free(json);
+		return !0;
+	}
+	cJSON*json_data;
 	json_data=cJSON_GetObjectItem(json,"data");
 	if((!json_data)||(!cJSON_IsObject(json_data))){
 		cJSON_free(json);
 		return !0;
 	}
+	cJSON*json_data_status;
 	json_data_status=cJSON_GetObjectItem(json_data,"status");
 	if((!json_data_status)||(!cJSON_IsString(json_data_status))){
 		cJSON_free(json);
@@ -112,6 +117,84 @@ int gmocoin_status(gmocoin_t*self,gmocoin_status_t*status){
 		*status=GMOCOIN_STATUS_PREOPEN;
 	}else if(!strcmp(status_maintenance,json_data_status->valuestring)){
 		*status=GMOCOIN_STATUS_MAINTENANCE;
+	}
+	cJSON_free(json);
+	return 0;
+}
+
+int gmocoin_trades(gmocoin_t*self,const char*symbol,int page,int count,gmocoin_trade_t**trades,size_t*num_trades){
+	if((!trades)||(!num_trades)){
+		return !0;
+	}
+	void*response_body;
+	size_t response_body_size;
+	int res;
+	char path[GMOCOIN_URL_MAX_LENGTH+1];
+	snprintf(path,GMOCOIN_URL_MAX_LENGTH,"/v1/trades?symbol=%s&page=%d&count=%d",symbol,page,count);
+	res=gmocoin_request_public(self,"GET",path,NULL,0,&response_body,&response_body_size);
+	if(res){
+		if(response_body){
+			free(response_body);
+		}
+		return !0;
+	}
+	cJSON*json=cJSON_ParseWithLength((const char*)response_body,response_body_size);
+	free(response_body);
+	if(!json){
+		return !0;
+	}
+	if(!cJSON_IsObject(json)){
+		cJSON_free(json);
+		return !0;
+	}
+	cJSON*json_data;
+	json_data=cJSON_GetObjectItem(json,"data");
+	if((!json_data)||(!cJSON_IsObject(json_data))){
+		cJSON_free(json);
+		return !0;
+	}
+	cJSON*json_data_list;
+	json_data_list=cJSON_GetObjectItem(json_data,"list");
+	if((!json_data_list)||(!cJSON_IsArray(json_data_list))){
+		cJSON_free(json);
+		return !0;
+	}
+	*num_trades=cJSON_GetArraySize(json_data_list);
+	*trades=malloc(sizeof(**trades)*(*num_trades));
+	if(!*trades){
+		cJSON_free(json);
+		return !0;
+	}
+	printf("_1\n");
+	for(int i=0;i<*num_trades;i++){
+		cJSON*trade=cJSON_GetArrayItem(json_data_list,i);
+		if((!trade)||(!cJSON_IsObject(trade))){
+			continue;
+		}
+		cJSON*price=cJSON_GetObjectItem(trade,"price");
+		if(price && cJSON_IsString(price)){
+			strncpy((*trades)[i].price,price->valuestring,sizeof((**trades).price)-1);
+		}else{
+			(*trades)[i].price[0]='\0';
+		}
+		cJSON*side=cJSON_GetObjectItem(trade,"side");
+		if(side && cJSON_IsString(side)){
+			strncpy((*trades)[i].side,side->valuestring,sizeof((**trades).side)-1);
+		}else{
+			(*trades)[i].side[0]='\0';
+		}
+		cJSON*size=cJSON_GetObjectItem(trade,"size");
+		if(size && cJSON_IsString(size)){
+			strncpy((*trades)[i].size,size->valuestring,sizeof((**trades).size)-1);
+		}else{
+			(*trades)[i].size[0]='\0';
+		}
+		cJSON*timestamp=cJSON_GetObjectItem(trade,"timestamp");
+		if(timestamp && cJSON_IsString(timestamp)){
+			strncpy((*trades)[i].timestamp,timestamp->valuestring,sizeof((**trades).timestamp)-1);
+		}else{
+			(*trades)[i].timestamp[0]='\0';
+		}
 	}
 	cJSON_free(json);
 	return 0;
