@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C"{
@@ -28,6 +29,9 @@ int tensor_add(tensor_t**ret,const tensor_t*a,const tensor_t*b);
 int tensor_add_asign(tensor_t*self,const tensor_t*b);
 int tensor_from_vector_to_column_vector(tensor_t*self);
 int tensor_from_vector_to_row_vector(tensor_t*self);
+
+int tensor_serialize(const tensor_t*self,FILE*fp);
+int tensor_deserialize(tensor_t**pself,FILE*fp);
 
 #ifdef __cplusplus
 } // extern "C"{

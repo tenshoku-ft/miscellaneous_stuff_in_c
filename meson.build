@@ -17,6 +17,7 @@ main=executable(
 		'src/linear.c',
 		'src/layer.c',
 		'src/activation.c',
+		'src/xorshift.c',
 	],
 	dependencies: [
 		dep_m,

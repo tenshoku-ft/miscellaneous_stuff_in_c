@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 void tensor_del(tensor_t*self){
 	if(!self){
@@ -273,6 +272,38 @@ int tensor_transpose(tensor_t*self,size_t dim1,size_t dim2){
 	size_t tmp=self->shape[dim1];
 	self->shape[dim1]=self->shape[dim2];
 	self->shape[dim2]=tmp;
+	return 0;
+}
+
+int tensor_serialize(const tensor_t*self,FILE*fp){
+	// TODO: implement some more error handling
+	fwrite(&(self->dim),sizeof(self->dim),1,fp);
+	fwrite(self->shape,self->dim,sizeof(self->shape[0]),fp);
+	fwrite(self->elements,tensor_num_elements(self),sizeof(self->elements[0]),fp);
+	return 0;
+}
+
+int tensor_deserialize(tensor_t**pself,FILE*fp){
+	tensor_t*self;
+	if(!(self=*pself=malloc(sizeof(**pself)))){
+		return !0;
+	}
+	fread(&(self->dim),sizeof(self->dim),1,fp);
+	// TODO: implement some more error handling
+	if(!(self->shape=malloc(self->dim*sizeof(self->shape[0])))){
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	fread(self->shape,self->dim,sizeof(*(self->shape)),fp);
+	size_t num_elements=tensor_num_elements(self);
+	if(!(self->elements=malloc(tensor_num_elements(self)*sizeof(self->elements[0])))){
+		free(self->shape);
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	fread(self->elements,num_elements,sizeof(self->elements[0]),fp);
 	return 0;
 }
 

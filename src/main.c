@@ -3,6 +3,7 @@
 #include "tensor.h"
 #include "linear.h"
 #include "activation.h"
+#include "xorshift.h"
 
 void print_tensor(tensor_t*t){
 	printf("shape:");
@@ -17,36 +18,31 @@ void print_tensor(tensor_t*t){
 }
 
 int main(int argc,const char*const*argv,const char*const*envp){
-	if(argc!=1){
-		printf("Usage: %s\n",argv[0]);
+	if(argc!=2){
+		printf("Usage: %s parameters\n",argv[0]);
 	}
-	tensor_t*orig;
-	tensor_t*row;
-	tensor_t*column;
-	tensor_t*product;
-	size_t shape_three=3;
-	tensor_new_uninitialized(&orig,&shape_three,1);
-	orig->elements[0]=1;
-	orig->elements[1]=2;
-	orig->elements[2]=3;
-	tensor_dup(orig,&row);
-	tensor_from_vector_to_row_vector(row);
-	tensor_dup(orig,&column);
-	tensor_from_vector_to_column_vector(column);
-	tensor_del(orig);
-	printf("row vector\n");
-	print_tensor(row);
-	printf("column vector\n");
-	print_tensor(column);
-	tensor_mul_matrix(&product,row,column);
-	printf("product\n");
-	print_tensor(product);
-	tensor_del(product);
-	tensor_mul_matrix(&product,column,row);
-	printf("product\n");
-	print_tensor(product);
-	tensor_del(product);
-	tensor_del(row);
-	tensor_del(column);
+	const char*params_filename=argv[1];
+	random_xorshift128_t*random_state;
+	FILE*fp;
+	linear_t*l1;
+	random_xorshift128_new(&random_state,123456789,362436069,521288629,88675123);
+	if((fp=fopen(params_filename,"rb"))){
+		linear_deserialize(&l1,fp);
+		printf("input: %ld, output: %ld\nweight:\n",l1->in_features,l1->out_features);
+		print_tensor(l1->weight);
+		printf("bias:\n");
+		print_tensor(l1->bias);
+		linear_del(l1);
+		fclose(fp);
+	}else{
+		if(!(fp=fopen(params_filename,"w+b"))){
+			return !0;
+		}
+		linear_new_uninitialized(&l1,28*28,10);
+		linear_init_xavier(l1,(float(*)(void*,float,float))random_xorshift128_normal_f32,random_state);
+		linear_serialize(l1,fp);
+		linear_del(l1);
+		fclose(fp);
+	}
 }
 

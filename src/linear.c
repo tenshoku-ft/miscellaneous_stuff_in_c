@@ -74,3 +74,24 @@ int linear_init_kaiming(linear_t*self,float(*normal)(void*,float,float),void*ran
 	return 0;
 }
 
+int linear_serialize(const linear_t*self,FILE*fp){
+	fwrite(&(self->in_features),sizeof(self->in_features),1,fp);
+	fwrite(&(self->out_features),sizeof(self->out_features),1,fp);
+	tensor_serialize(self->weight,fp);
+	tensor_serialize(self->bias,fp);
+	return 0;
+}
+
+int linear_deserialize(linear_t**pself,FILE*fp){
+	linear_t*self;
+	self=*pself=malloc(sizeof(**pself));
+	if(!self){
+		return !0;
+	}
+	fread(&(self->in_features),sizeof(self->in_features),1,fp);
+	fread(&(self->out_features),sizeof(self->out_features),1,fp);
+	tensor_deserialize(&(self->weight),fp);
+	tensor_deserialize(&(self->bias),fp);
+	return 0;
+}
+
