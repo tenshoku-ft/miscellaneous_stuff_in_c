@@ -88,10 +88,31 @@ int linear_deserialize(linear_t**pself,FILE*fp){
 	if(!self){
 		return !0;
 	}
-	fread(&(self->in_features),sizeof(self->in_features),1,fp);
-	fread(&(self->out_features),sizeof(self->out_features),1,fp);
-	tensor_deserialize(&(self->weight),fp);
-	tensor_deserialize(&(self->bias),fp);
+	size_t input_size;
+	size_t ret;
+	input_size=sizeof(self->in_features);
+	if(input_size!=(ret=fread(&(self->in_features),1,input_size,fp))){
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	input_size=sizeof(self->out_features);
+	if(input_size!=fread(&(self->out_features),1,input_size,fp)){
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	if(tensor_deserialize(&(self->weight),fp)){
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	if(tensor_deserialize(&(self->bias),fp)){
+		tensor_del(self->weight);
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
 	return 0;
 }
 

@@ -13,7 +13,7 @@ void print_tensor(tensor_t*t){
 	printf("\nelements:\n");
 	size_t num_elements=tensor_num_elements(t);
 	for(size_t i=0;i<num_elements;i++){
-		printf(" %6e\n",t->elements[i]);
+		printf(" %+e\n",t->elements[i]);
 	}
 }
 

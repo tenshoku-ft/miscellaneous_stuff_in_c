@@ -53,7 +53,7 @@ int tensor_new_uninitialized(tensor_t**pself,const size_t*shape,size_t dim){
 	return 0;
 }
 
-size_t tensor_new_from_float(tensor_t**pself,float val){
+int tensor_new_from_float(tensor_t**pself,float val){
 	int ret;
 	size_t one=1;
 	ret=tensor_new_uninitialized(pself,&one,one);
@@ -276,34 +276,63 @@ int tensor_transpose(tensor_t*self,size_t dim1,size_t dim2){
 }
 
 int tensor_serialize(const tensor_t*self,FILE*fp){
-	// TODO: implement some more error handling
-	fwrite(&(self->dim),sizeof(self->dim),1,fp);
-	fwrite(self->shape,self->dim,sizeof(self->shape[0]),fp);
-	fwrite(self->elements,tensor_num_elements(self),sizeof(self->elements[0]),fp);
+	size_t output_size;
+	size_t ret;
+	output_size=sizeof(self->dim);
+	if(output_size!=(ret=fwrite(&(self->dim),1,output_size,fp))){
+		return !0;
+	}
+	output_size=self->dim*sizeof(self->shape[0]);
+	if(output_size!=(ret=fwrite(self->shape,1,output_size,fp))){
+		return !0;
+	}
+	output_size=tensor_num_elements(self)*sizeof(self->elements[0]);
+	if(output_size!=(ret=fwrite(self->elements,1,output_size,fp))){
+		return !0;
+	}
 	return 0;
 }
 
 int tensor_deserialize(tensor_t**pself,FILE*fp){
 	tensor_t*self;
+	size_t input_size;
 	if(!(self=*pself=malloc(sizeof(**pself)))){
 		return !0;
 	}
-	fread(&(self->dim),sizeof(self->dim),1,fp);
-	// TODO: implement some more error handling
-	if(!(self->shape=malloc(self->dim*sizeof(self->shape[0])))){
+	input_size=sizeof(self->dim);
+	if(input_size!=fread(&(self->dim),1,input_size,fp)){
 		free(self);
 		*pself=NULL;
 		return !0;
 	}
-	fread(self->shape,self->dim,sizeof(*(self->shape)),fp);
-	size_t num_elements=tensor_num_elements(self);
-	if(!(self->elements=malloc(tensor_num_elements(self)*sizeof(self->elements[0])))){
+	// TODO: implement some more error handling
+	input_size=self->dim*sizeof(self->shape[0]);
+	if(!(self->shape=malloc(input_size))){
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	if(input_size!=fread(self->shape,1,input_size,fp)){
 		free(self->shape);
 		free(self);
 		*pself=NULL;
 		return !0;
 	}
-	fread(self->elements,num_elements,sizeof(self->elements[0]),fp);
+	size_t num_elements=tensor_num_elements(self);
+	input_size=num_elements*sizeof(self->elements[0]);
+	if(!(self->elements=malloc(input_size))){
+		free(self->shape);
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
+	if(input_size!=fread(self->elements,1,input_size,fp)){
+		free(self->elements);
+		free(self->shape);
+		free(self);
+		*pself=NULL;
+		return !0;
+	}
 	return 0;
 }
 

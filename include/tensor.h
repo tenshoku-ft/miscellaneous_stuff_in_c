@@ -16,7 +16,7 @@ typedef struct{
 void tensor_del(tensor_t*self);
 int tensor_new_uninitialized(tensor_t**pself,const size_t*shape,size_t dim);
 size_t tensor_num_elements(const tensor_t*self);
-size_t tensor_new_from_float(tensor_t**pself,float val);
+int tensor_new_from_float(tensor_t**pself,float val);
 int tensor_dup(const tensor_t*self,tensor_t**ret);
 int tensor_map_assign(tensor_t*self,float(*f)(float));
 int tensor_zero_out(tensor_t*self);
